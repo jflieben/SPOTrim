@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPOTrim — SharePoint Storage Trimmer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>✂️ SPOTrim</h1>
+                <span class="version" id="moduleVersion"></span>
+            </div>
+            <div class="header-right">
+                <span class="connection-status" id="connectionStatus">Disconnected</span>
+                <button class="btn btn-primary" id="connectBtn" onclick="handleConnect()">Connect</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
+            <button class="nav-btn" data-page="scan" onclick="showPage('scan')">🔍 Scan</button>
+            <button class="nav-btn" data-page="sites" onclick="showPage('sites')">🌐 Sites</button>
+            <button class="nav-btn" data-page="config" onclick="showPage('config')">⚙️ Settings</button>
+            <button class="nav-btn" data-page="audit" onclick="showPage('audit')">📋 Audit Log</button>
+        </nav>
+
+        <!-- Dashboard Page -->
+        <div class="page active" id="page-dashboard">
+            <h2>Dashboard</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statSites">—</div>
+                    <div class="stat-label">Sites</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statLibraries">—</div>
+                    <div class="stat-label">Libraries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statScans">—</div>
+                    <div class="stat-label">Scans</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statBytesFreed">—</div>
+                    <div class="stat-label">Bytes Freed</div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Recent Scans</h3>
+                <table class="data-table" id="recentScansTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Sites</th>
+                            <th>Started</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentScansBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Scan Page -->
+        <div class="page" id="page-scan">
+            <h2>Run Scan</h2>
+            <div class="card">
+                <p>Select scan type and start scanning your SharePoint environment.</p>
+                <div class="form-group">
+                    <label for="scanType">Scan Type</label>
+                    <select id="scanType">
+                        <option value="Discovery">Discovery — Enumerate all sites</option>
+                        <option value="VersionAnalysis">Version Analysis — Analyze versioning settings</option>
+                        <option value="Cleanup">Cleanup — Trim excess versions (respects dry-run)</option>
+                        <option value="Full">Full — Discovery + Analysis + Cleanup</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="startScanBtn" onclick="startScan()">Start Scan</button>
+                <button class="btn btn-danger" id="cancelScanBtn" onclick="cancelScan()" style="display:none;">Cancel Scan</button>
+            </div>
+            <div class="card" id="progressCard" style="display:none;">
+                <h3>Scan Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Starting...</div>
+                <div class="log-output" id="scanLogs"></div>
+            </div>
+        </div>
+
+        <!-- Sites Page -->
+        <div class="page" id="page-sites">
+            <h2>Sites</h2>
+            <div class="card">
+                <div class="toolbar">
+                    <select id="sitesScanSelect" onchange="loadSites()">
+                        <option value="">Select a scan...</option>
+                    </select>
+                    <button class="btn" onclick="exportSites('xlsx')">📥 Export XLSX</button>
+                    <button class="btn" onclick="exportSites('csv')">📥 Export CSV</button>
+                </div>
+                <table class="data-table" id="sitesTable">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>URL</th>
+                            <th>Storage Used</th>
+                            <th>Last Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sitesBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Config Page -->
+        <div class="page" id="page-config">
+            <h2>Settings</h2>
+            <div class="card">
+                <div class="form-group">
+                    <label for="cfgMaxThreads">Max Threads</label>
+                    <input type="number" id="cfgMaxThreads" min="1" max="20" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="cfgVersionLimit">Default Version Limit</label>
+                    <input type="number" id="cfgVersionLimit" min="1" max="50000" value="100">
+                </div>
+                <div class="form-group">
+                    <label for="cfgIncludeOneDrive">
+                        <input type="checkbox" id="cfgIncludeOneDrive" checked> Include OneDrive Sites
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="cfgDryRun">
+                        <input type="checkbox" id="cfgDryRun" checked> Dry Run (no actual changes)
+                    </label>
+                </div>
+                <button class="btn btn-primary" onclick="saveConfig()">Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Audit Log Page -->
+        <div class="page" id="page-audit">
+            <h2>Audit Log</h2>
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

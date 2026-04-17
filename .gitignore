@@ -1,0 +1,35 @@
+# Build outputs
+bin/
+obj/
+publish/
+
+# Module compiled DLLs (built via Build-Module.ps1)
+module/lib/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# NuGet
+*.nupkg
+packages/
+
+# Test results
+TestResults/
+
+# PowerShell
+*.psess
+
+# SQLite databases (created at runtime)
+*.db
+*.db-wal
+*.db-shm
+
+# Token cache
+.spotrim-rt
